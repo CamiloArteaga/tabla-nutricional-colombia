@@ -1,0 +1,111 @@
+:root {
+  color-scheme: light;
+  --borde: #000;
+  --fondo: #fff;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  max-width: 960px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  color: #1a1a1a;
+}
+
+h1 {
+  font-size: 1.4rem;
+}
+
+.nota-legal {
+  color: #555;
+  font-size: 0.85rem;
+}
+
+.contenedor {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+form {
+  flex: 1 1 320px;
+  min-width: 280px;
+}
+
+fieldset {
+  margin-bottom: 1rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.3rem;
+  margin-top: 0.15rem;
+}
+
+button {
+  padding: 0.6rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* Caja de la tabla nutricional: se usa igual en pantalla y en la captura PNG. */
+.etiqueta {
+  flex: 0 0 340px;
+  border: 2px solid var(--borde);
+  background: var(--fondo);
+  padding: 0.5rem 0.6rem;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #000;
+}
+
+.etiqueta .titulo {
+  font-size: 1.5rem;
+  font-weight: 900;
+  border-bottom: 6px solid var(--borde);
+  padding-bottom: 0.2rem;
+  margin-bottom: 0.2rem;
+}
+
+.etiqueta .linea-porcion,
+.etiqueta .linea-porciones {
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.etiqueta .linea-gruesa {
+  border-top: 8px solid var(--borde);
+  margin: 0.3rem 0;
+}
+
+.etiqueta table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.etiqueta th,
+.etiqueta td {
+  border-bottom: 1px solid #999;
+  padding: 0.2rem 0.1rem;
+  text-align: right;
+}
+
+.etiqueta th:first-child,
+.etiqueta td:first-child {
+  text-align: left;
+}
+
+.etiqueta tr.energia td {
+  font-weight: bold;
+  font-size: 1rem;
+  border-bottom: 3px solid var(--borde);
+}

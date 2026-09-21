@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tabla nutricional Colombia</title>
+    <link rel="stylesheet" href="estilos.css" />
+  </head>
+  <body>
+    <h1>Tabla de información nutricional — Colombia</h1>
+    <p class="nota-legal">
+      Formato Res. 810 de 2021 (MinSalud) y modificatorias. Los valores se
+      declaran siempre, sin omitir filas por umbral de no significancia.
+    </p>
+
+    <div class="contenedor">
+      <form id="form-nutrientes">
+        <fieldset>
+          <legend>Producto</legend>
+          <label>Nombre del producto <input type="text" id="producto" /></label>
+          <label
+            >Tamaño de la porción (g o mL)
+            <input type="text" id="porcion-texto" placeholder="ej. 30 g" />
+          </label>
+          <label
+            >Porción en gramos o mL (para el cálculo)
+            <input type="number" id="porcion-valor" step="any" min="0" />
+          </label>
+          <label
+            >Porciones por envase (opcional)
+            <input type="text" id="porciones-envase" />
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Valores por 100 g o 100 mL</legend>
+          <div id="campos-nutrientes"></div>
+        </fieldset>
+
+        <button type="button" id="btn-descargar">Descargar imagen (PNG)</button>
+      </form>
+
+      <div id="tabla-nutricional" class="etiqueta">
+        <div class="titulo">Información Nutricional</div>
+        <div class="linea-porcion" id="et-porcion">Tamaño de la porción: —</div>
+        <div class="linea-porciones" id="et-porciones-envase"></div>
+        <div class="linea-gruesa"></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Nutriente</th>
+              <th>Por 100 g/mL</th>
+              <th>Por porción</th>
+            </tr>
+          </thead>
+          <tbody id="et-filas"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <script src="vendor/html2canvas.min.js"></script>
+    <script src="calculo.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
