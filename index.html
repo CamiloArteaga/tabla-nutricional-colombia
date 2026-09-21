@@ -58,6 +58,25 @@
         </fieldset>
 
         <fieldset>
+          <legend>Declaraciones y datos adicionales (art. 10.7 y 32)</legend>
+          <label class="campo-casilla">
+            <input type="checkbox" id="declaracion-grasa" />
+            ¿Declara alguna propiedad nutricional sobre grasa, ácidos grasos o
+            colesterol?
+          </label>
+          <label class="campo-casilla">
+            <input type="checkbox" id="declaracion-azucares" />
+            ¿Declara o hace referencia a edulcorantes, azúcares o polialcoholes
+            en la etiqueta?
+          </label>
+          <label
+            >Grasa trans industriales (mg, para el sello — si se deja vacío se
+            usa el total de grasa trans)
+            <input type="number" id="trans-industrial" step="any" min="0" />
+          </label>
+        </fieldset>
+
+        <fieldset>
           <legend>Declaración</legend>
           <label class="campo-radio">
             <input type="radio" name="modo" value="todo" checked />

@@ -104,7 +104,11 @@ const NOMBRE_OMISION = {
 };
 
 // modo: "todo" (declarar siempre todo) o "norma" (omitir cuando el art. 10.7 lo permite).
-function nutrientesAOmitir(valores100, modo) {
+// declaraciones.grasa: hay declaración de propiedades sobre grasa/ácidos grasos/colesterol
+//   -> grasa saturada nunca se omite (Tabla 3, excepción de esa fila).
+// declaraciones.azucares: hay declaración o referencia a edulcorantes/azúcares/polialcoholes
+//   en la etiqueta -> azúcares totales nunca se omite, se declara "0" (ya lo hace Tabla 2).
+function nutrientesAOmitir(valores100, modo, declaraciones = {}) {
   const omitidos = new Set();
   if (modo !== "norma") return omitidos;
   for (const k of ["sat", "azt", "fib"]) {
@@ -113,6 +117,8 @@ function nutrientesAOmitir(valores100, modo) {
   for (const k of ["vita", "vitd", "fe", "zn"]) {
     if ((valores100[k] || 0) < VRN_2PCT[k]) omitidos.add(k);
   }
+  if (declaraciones.grasa) omitidos.delete("sat");
+  if (declaraciones.azucares) omitidos.delete("azt");
   return omitidos;
 }
 
@@ -125,7 +131,16 @@ function textoLeyendaOmision(omitidos) {
 }
 
 // Umbrales de la Tabla 17 (art. 32): porcentaje de energía, o cantidad absoluta.
-function calcularSellos(valores100, energia100, edulcorantes) {
+// transIndustrialMg: grasa trans INDUSTRIAL en mg/100g, para el sello (art. 32.2.d,
+// modificado por la Res. 2066/2024) — excluye la de origen natural (lácteos,
+// rumiantes). La tabla nutricional sigue declarando el total (valores100.trans);
+// si no se especifica, se asume que todo lo declarado es industrial.
+function calcularSellos(
+  valores100,
+  energia100,
+  edulcorantes,
+  transIndustrialMg,
+) {
   const kcal = energia100 > 0 ? energia100 : 0;
   const pctEnergia = (gramos, factorKcal) =>
     kcal > 0 ? ((gramos * factorKcal) / kcal) * 100 : 0;
@@ -145,8 +160,15 @@ function calcularSellos(valores100, energia100, edulcorantes) {
   const pctSat = pctEnergia(valores100.sat || 0, 9);
   const grasaSaturada = { pct: pctSat, activo: pctSat >= 10 };
 
-  const pctTrans = pctEnergia((valores100.trans || 0) / 1000, 9);
-  const grasaTrans = { pct: pctTrans, activo: pctTrans >= 1 };
+  const transTotal = valores100.trans || 0;
+  const transMg = esNumero(transIndustrialMg) ? transIndustrialMg : transTotal;
+  const pctTrans = pctEnergia(transMg / 1000, 9);
+  const grasaTrans = {
+    pct: pctTrans,
+    activo: pctTrans >= 1,
+    transMg,
+    transTotal,
+  };
 
   return {
     sodio,

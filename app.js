@@ -52,12 +52,19 @@ function leerFormulario() {
     valores100[p.k] = C.esNumero(v) ? v : 0;
   }
   const porcionG = parseFloat(document.getElementById("porcion-valor").value);
+  const transIndustrial = parseFloat(
+    document.getElementById("trans-industrial").value,
+  );
   return {
     producto: document.getElementById("producto").value,
     porcionTexto: document.getElementById("porcion-texto").value,
     porcionesEnvase: document.getElementById("porciones-envase").value,
     porcionG: C.esNumero(porcionG) ? porcionG : 0,
     edulcorantes: document.getElementById("edulcorantes").checked,
+    declaracionGrasa: document.getElementById("declaracion-grasa").checked,
+    declaracionAzucares: document.getElementById("declaracion-azucares")
+      .checked,
+    transIndustrial: C.esNumero(transIndustrial) ? transIndustrial : null,
     formato: document.querySelector('input[name="formato"]:checked').value,
     modo: document.querySelector('input[name="modo"]:checked').value,
     valores100,
@@ -211,12 +218,17 @@ function pintarSellos(sellos) {
     ? piezas.join("")
     : '<p class="sin-sellos">Sin sellos de advertencia con estos valores.</p>';
 
+  const detalleTrans =
+    sellos.grasaTrans.transMg !== sellos.grasaTrans.transTotal
+      ? `sobre ${num(sellos.grasaTrans.transMg, 0)} mg industriales (de ${num(sellos.grasaTrans.transTotal, 0)} mg totales)`
+      : `sobre ${num(sellos.grasaTrans.transMg, 0)} mg`;
+
   const detalle = document.getElementById("sellos-detalle");
   detalle.innerHTML = `
     <p>Sodio: ${num(sellos.sodio.ratioSodio, 2)} mg/kcal · ${num(sellos.sodio.na, 0)} mg/100g (umbral: ≥1 mg/kcal o ≥300 mg)</p>
     <p>Azúcares: ${num(sellos.azucares.pctAnadidos, 1)} % (añadidos) · ${num(sellos.azucares.pctTotales, 1)} % (totales) — libres real está entre ambos (umbral: ≥10 %)</p>
     <p>Grasa saturada: ${num(sellos.grasaSaturada.pct, 1)} % de la energía (umbral: ≥10 %)</p>
-    <p>Grasa trans: ${num(sellos.grasaTrans.pct, 1)} % de la energía (umbral: ≥1 %)</p>
+    <p>Grasa trans: ${num(sellos.grasaTrans.pct, 1)} % de la energía ${detalleTrans} (umbral: ≥1 %)</p>
     <p>Edulcorantes: ${sellos.edulcorantes.activo ? "declarados" : "no declarados"}</p>
   `;
 }
@@ -226,7 +238,10 @@ function recalcular() {
   guardado.escribir(datos);
 
   const res = C.calcular(datos.valores100, datos.porcionG);
-  const omitidos = C.nutrientesAOmitir(datos.valores100, datos.modo);
+  const omitidos = C.nutrientesAOmitir(datos.valores100, datos.modo, {
+    grasa: datos.declaracionGrasa,
+    azucares: datos.declaracionAzucares,
+  });
   const leyenda = C.textoLeyendaOmision(omitidos);
 
   if (datos.formato === "tabular") pintarTabular(datos, res, omitidos, leyenda);
@@ -238,6 +253,7 @@ function recalcular() {
     datos.valores100,
     res.energia100,
     datos.edulcorantes,
+    datos.transIndustrial,
   );
   pintarSellos(sellos);
 }
@@ -254,6 +270,12 @@ function restaurar() {
     document.getElementById("porcion-valor").value = datos.porcionG;
   if (datos.edulcorantes)
     document.getElementById("edulcorantes").checked = true;
+  if (datos.declaracionGrasa)
+    document.getElementById("declaracion-grasa").checked = true;
+  if (datos.declaracionAzucares)
+    document.getElementById("declaracion-azucares").checked = true;
+  if (C.esNumero(datos.transIndustrial))
+    document.getElementById("trans-industrial").value = datos.transIndustrial;
   if (datos.formato) {
     const input = document.querySelector(
       `input[name="formato"][value="${datos.formato}"]`,

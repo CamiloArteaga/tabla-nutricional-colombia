@@ -116,6 +116,33 @@ verificar(
   0,
 );
 
+// Excepciones de la Tabla 3: declaraciones en la etiqueta anulan la omisión
+verificar(
+  "grasa saturada 0.05 se omite sin declaración de grasa",
+  C.nutrientesAOmitir({ sat: 0.05 }, "norma").has("sat"),
+  true,
+);
+verificar(
+  "grasa saturada 0.05 NO se omite con declaración de grasa/ácidos grasos/colesterol",
+  C.nutrientesAOmitir({ sat: 0.05 }, "norma", { grasa: true }).has("sat"),
+  false,
+);
+verificar(
+  "azúcares 0.3 se omite sin declaración de edulcorantes/azúcares/polialcoholes",
+  C.nutrientesAOmitir({ azt: 0.3 }, "norma").has("azt"),
+  true,
+);
+verificar(
+  "azúcares 0.3 NO se omite con esa declaración (se muestra como 0)",
+  C.nutrientesAOmitir({ azt: 0.3 }, "norma", { azucares: true }).has("azt"),
+  false,
+);
+verificar(
+  "azúcares 0.3 con declaración sigue formateando a 0 (Tabla 2)",
+  C.formatearNutriente("azt", 0.3),
+  0,
+);
+
 verificar(
   "leyenda con 2 nutrientes",
   C.textoLeyendaOmision(new Set(["sat", "fib"])),
@@ -180,6 +207,24 @@ verificar(
 verificar(
   "grasa trans inactiva justo bajo 1%",
   C.calcularSellos({ trans: 999 }, 900, false).grasaTrans.activo,
+  false,
+);
+
+// Separación industrial/natural (art. 32.2.d, mod. Res. 2066/2024): el sello
+// solo cuenta la grasa trans industrial, aunque la tabla declare el total.
+verificar(
+  "grasa trans: sin transIndustrial, usa el total declarado (comportamiento actual)",
+  C.calcularSellos({ trans: 1000 }, 900, false).grasaTrans.activo,
+  true,
+);
+verificar(
+  "grasa trans: con transIndustrial bajo el umbral, sello NO activo aunque el total sea alto",
+  C.calcularSellos({ trans: 1000 }, 900, false, 5).grasaTrans.activo,
+  false,
+);
+verificar(
+  "grasa trans: transIndustrial en cero -> sello inactivo (toda natural)",
+  C.calcularSellos({ trans: 1000 }, 900, false, 0).grasaTrans.activo,
   false,
 );
 
