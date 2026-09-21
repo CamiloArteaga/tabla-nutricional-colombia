@@ -11,8 +11,8 @@ const PARAMS = [
   { k: "aza", nombre: "Azúcares añadidos", unidad: "g" },
   { k: "fib", nombre: "Fibra dietaria", unidad: "g" },
   { k: "na", nombre: "Sodio", unidad: "mg" },
-  { k: "vita", nombre: "Vitamina A", unidad: "ug" },
-  { k: "vitd", nombre: "Vitamina D", unidad: "ug" },
+  { k: "vita", nombre: "Vitamina A", unidad: "µg ER" },
+  { k: "vitd", nombre: "Vitamina D", unidad: "µg" },
   { k: "fe", nombre: "Hierro", unidad: "mg" },
   { k: "zn", nombre: "Zinc", unidad: "mg" },
   { k: "ca", nombre: "Calcio", unidad: "mg" },
@@ -84,6 +84,79 @@ function decimalesParaEnergia(kcal) {
   return decimalesTabla1(kcal, false);
 }
 
+// 2 % de la Tabla 9 (VRN-N, adultos): vitamina A 800 ug ER, vitamina D 15 ug,
+// hierro 20 mg, zinc 11 mg. Bajo esto, la Tabla 3 permite omitir esa fila.
+const VRN_2PCT = { vita: 16, vitd: 0.3, fe: 0.4, zn: 0.22 };
+
+// Nutrientes cuya fila la Tabla 3 (art. 10.7, "Requisitos adicionales") permite
+// omitir por umbral, con el nombre para la leyenda. Grasa trans y calcio NO
+// están en esta lista aunque tengan umbral en la Tabla 2 (grasa trans) o
+// pudieran parecer candidatos (calcio): su columna de requisitos no da esa
+// excepción.
+const NOMBRE_OMISION = {
+  sat: "grasa saturada",
+  azt: "azúcares",
+  fib: "fibra dietaria",
+  vita: "vitamina A",
+  vitd: "vitamina D",
+  fe: "hierro",
+  zn: "zinc",
+};
+
+// modo: "todo" (declarar siempre todo) o "norma" (omitir cuando el art. 10.7 lo permite).
+function nutrientesAOmitir(valores100, modo) {
+  const omitidos = new Set();
+  if (modo !== "norma") return omitidos;
+  for (const k of ["sat", "azt", "fib"]) {
+    if ((valores100[k] || 0) <= UMBRAL_CERO[k]) omitidos.add(k);
+  }
+  for (const k of ["vita", "vitd", "fe", "zn"]) {
+    if ((valores100[k] || 0) < VRN_2PCT[k]) omitidos.add(k);
+  }
+  return omitidos;
+}
+
+function textoLeyendaOmision(omitidos) {
+  if (omitidos.size === 0) return "";
+  const nombres = [...omitidos].map((k) => NOMBRE_OMISION[k]);
+  const ultimo = nombres.pop();
+  const lista = nombres.length ? `${nombres.join(", ")} y ${ultimo}` : ultimo;
+  return `No es una fuente significativa de ${lista}.`;
+}
+
+// Umbrales de la Tabla 17 (art. 32): porcentaje de energía, o cantidad absoluta.
+function calcularSellos(valores100, energia100, edulcorantes) {
+  const kcal = energia100 > 0 ? energia100 : 0;
+  const pctEnergia = (gramos, factorKcal) =>
+    kcal > 0 ? ((gramos * factorKcal) / kcal) * 100 : 0;
+
+  const na = valores100.na || 0;
+  const ratioSodio = kcal > 0 ? na / kcal : 0;
+  const sodio = { ratioSodio, na, activo: ratioSodio >= 1 || na >= 300 };
+
+  const pctAzt = pctEnergia(valores100.azt || 0, 4);
+  const pctAza = pctEnergia(valores100.aza || 0, 4);
+  const azucares = {
+    pctAnadidos: pctAza,
+    pctTotales: pctAzt,
+    activo: pctAza >= 10 || pctAzt >= 10,
+  };
+
+  const pctSat = pctEnergia(valores100.sat || 0, 9);
+  const grasaSaturada = { pct: pctSat, activo: pctSat >= 10 };
+
+  const pctTrans = pctEnergia((valores100.trans || 0) / 1000, 9);
+  const grasaTrans = { pct: pctTrans, activo: pctTrans >= 1 };
+
+  return {
+    sodio,
+    azucares,
+    grasaSaturada,
+    grasaTrans,
+    edulcorantes: { activo: !!edulcorantes },
+  };
+}
+
 function calcular(valores100, porcionG) {
   const cho = valores100.cho || 0;
   const fib = valores100.fib || 0;
@@ -116,6 +189,11 @@ const api = {
   decimalesParaNutriente,
   formatearEnergia,
   decimalesParaEnergia,
+  VRN_2PCT,
+  NOMBRE_OMISION,
+  nutrientesAOmitir,
+  textoLeyendaOmision,
+  calcularSellos,
   calcular,
 };
 

@@ -9,8 +9,8 @@
   <body>
     <h1>Tabla de información nutricional — Colombia</h1>
     <p class="nota-legal">
-      Formato Res. 810 de 2021 (MinSalud) y modificatorias. Los valores se
-      declaran siempre, sin omitir filas por umbral de no significancia.
+      Formato Res. 810 de 2021 (MinSalud) y modificatorias: formatos vertical
+      estándar, tabular y lineal (art. 30) y sellos de advertencia (art. 32).
     </p>
 
     <div class="contenedor">
@@ -35,26 +35,53 @@
         <fieldset>
           <legend>Valores por 100 g o 100 mL</legend>
           <div id="campos-nutrientes"></div>
+          <label class="campo-casilla">
+            <input type="checkbox" id="edulcorantes" />
+            ¿Contiene edulcorantes añadidos?
+          </label>
         </fieldset>
 
-        <button type="button" id="btn-descargar">Descargar imagen (PNG)</button>
+        <fieldset>
+          <legend>Formato de tabla</legend>
+          <label class="campo-radio">
+            <input type="radio" name="formato" value="vertical" checked />
+            Vertical estándar
+          </label>
+          <label class="campo-radio">
+            <input type="radio" name="formato" value="tabular" />
+            Tabular
+          </label>
+          <label class="campo-radio">
+            <input type="radio" name="formato" value="lineal" />
+            Lineal
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Declaración</legend>
+          <label class="campo-radio">
+            <input type="radio" name="modo" value="todo" checked />
+            Completa (declarar siempre todo)
+          </label>
+          <label class="campo-radio">
+            <input type="radio" name="modo" value="norma" />
+            Según norma (omite lo no significativo)
+          </label>
+        </fieldset>
+
+        <button type="button" id="btn-descargar">Descargar tabla (PNG)</button>
       </form>
 
-      <div id="tabla-nutricional" class="etiqueta">
-        <div class="titulo">Información Nutricional</div>
-        <div class="linea-porcion" id="et-porcion">Tamaño de la porción: —</div>
-        <div class="linea-porciones" id="et-porciones-envase"></div>
-        <div class="linea-gruesa"></div>
-        <table>
-          <thead>
-            <tr>
-              <th>Nutriente</th>
-              <th>Por 100 g/mL</th>
-              <th>Por porción</th>
-            </tr>
-          </thead>
-          <tbody id="et-filas"></tbody>
-        </table>
+      <div class="previsualizacion">
+        <div id="tabla-nutricional" class="etiqueta"></div>
+
+        <div id="sellos-panel">
+          <div id="sellos-octagonos"></div>
+          <div id="sellos-detalle"></div>
+          <button type="button" id="btn-descargar-sellos">
+            Descargar sellos (PNG)
+          </button>
+        </div>
       </div>
     </div>
 

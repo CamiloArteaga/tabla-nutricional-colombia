@@ -79,6 +79,121 @@ verificar(
   1,
 );
 
+// Modo "norma": omisión de filas según la Tabla 3 (art. 10.7)
+verificar(
+  "grasa saturada 0.1 exacto -> se omite",
+  C.nutrientesAOmitir({ sat: 0.1 }, "norma").has("sat"),
+  true,
+);
+verificar(
+  "grasa saturada 0.11 -> NO se omite",
+  C.nutrientesAOmitir({ sat: 0.11 }, "norma").has("sat"),
+  false,
+);
+verificar(
+  "vitamina A exactamente 2% (16 ug) -> NO se omite (no es 'inferior')",
+  C.nutrientesAOmitir({ vita: 16 }, "norma").has("vita"),
+  false,
+);
+verificar(
+  "vitamina A 15.9 ug (<2%) -> se omite",
+  C.nutrientesAOmitir({ vita: 15.9 }, "norma").has("vita"),
+  true,
+);
+verificar(
+  "grasa trans nunca se omite, aunque sea 0 mg",
+  C.nutrientesAOmitir({ trans: 0 }, "norma").has("trans"),
+  false,
+);
+verificar(
+  "calcio nunca está en NOMBRE_OMISION",
+  "ca" in C.NOMBRE_OMISION,
+  false,
+);
+verificar(
+  "modo 'todo' -> nunca omite nada",
+  C.nutrientesAOmitir({ sat: 0, azt: 0, vita: 0 }, "todo").size,
+  0,
+);
+
+verificar(
+  "leyenda con 2 nutrientes",
+  C.textoLeyendaOmision(new Set(["sat", "fib"])),
+  "No es una fuente significativa de grasa saturada y fibra dietaria.",
+);
+verificar(
+  "leyenda con 3 nutrientes",
+  C.textoLeyendaOmision(new Set(["sat", "azt", "fib"])),
+  "No es una fuente significativa de grasa saturada, azúcares y fibra dietaria.",
+);
+verificar("leyenda vacía", C.textoLeyendaOmision(new Set()), "");
+
+// Sellos de advertencia (art. 32, Tabla 17)
+verificar(
+  "sodio activo por relación mg/kcal >= 1",
+  C.calcularSellos({ na: 50 }, 40, false).sodio.activo,
+  true,
+);
+verificar(
+  "sodio activo por umbral absoluto >= 300 mg",
+  C.calcularSellos({ na: 300 }, 5000, false).sodio.activo,
+  true,
+);
+verificar(
+  "sodio inactivo bajo ambos umbrales",
+  C.calcularSellos({ na: 50 }, 200, false).sodio.activo,
+  false,
+);
+
+verificar(
+  "azúcares activo solo por añadidos (12%), no por totales (8%)",
+  C.calcularSellos({ azt: 2, aza: 3 }, 100, false).azucares.activo,
+  true,
+);
+verificar(
+  "azúcares activo solo por totales (12%), no por añadidos (4%)",
+  C.calcularSellos({ azt: 3, aza: 1 }, 100, false).azucares.activo,
+  true,
+);
+verificar(
+  "azúcares inactivo por ambas bases",
+  C.calcularSellos({ azt: 1, aza: 0.5 }, 100, false).azucares.activo,
+  false,
+);
+
+verificar(
+  "grasa saturada activa exactamente en 10%",
+  C.calcularSellos({ sat: 1 }, 90, false).grasaSaturada.activo,
+  true,
+);
+verificar(
+  "grasa saturada inactiva justo bajo 10%",
+  C.calcularSellos({ sat: 0.99 }, 90, false).grasaSaturada.activo,
+  false,
+);
+
+verificar(
+  "grasa trans activa exactamente en 1% (convierte mg a g)",
+  C.calcularSellos({ trans: 1000 }, 900, false).grasaTrans.activo,
+  true,
+);
+verificar(
+  "grasa trans inactiva justo bajo 1%",
+  C.calcularSellos({ trans: 999 }, 900, false).grasaTrans.activo,
+  false,
+);
+
+verificar(
+  "edulcorantes: activo cuando se marca la casilla",
+  C.calcularSellos({}, 100, true).edulcorantes.activo,
+  true,
+);
+verificar(
+  "edulcorantes: inactivo por defecto",
+  C.calcularSellos({}, 100, false).edulcorantes.activo,
+  false,
+);
+
 if (fallos > 0) {
   console.error(`\n${fallos} prueba(s) fallida(s)`);
   process.exit(1);
