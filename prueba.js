@@ -106,8 +106,8 @@ verificar(
   false,
 );
 verificar(
-  "calcio nunca está en NOMBRE_OMISION",
-  "ca" in C.NOMBRE_OMISION,
+  "vertical estándar: calcio nunca se omite, aunque el valor sea 0 (Tabla 3 no le da esa excepción)",
+  C.nutrientesAOmitir({ ca: 0 }, "norma").has("ca"),
   false,
 );
 verificar(
@@ -237,6 +237,106 @@ verificar(
   "edulcorantes: inactivo por defecto",
   C.calcularSellos({}, 100, false).edulcorantes.activo,
   false,
+);
+
+// Formato simplificado (art. 30.2): elegibilidad por conteo de "no
+// significativos" entre los 15 nutrientes que evalúa la norma.
+const baseSimplificado = {
+  grasa: 0,
+  sat: 0,
+  trans: 0,
+  cho: 0,
+  fib: 0,
+  azt: 5, // no significativo solo cuando se baja a 0, para probar el caso "5"
+  aza: 5,
+  prot: 50,
+  na: 500,
+  vita: 100,
+  vitd: 5,
+  fe: 5,
+  zn: 5,
+  ca: 500,
+};
+const resSimplificado6 = C.calcular({ ...baseSimplificado, azt: 0 }, null);
+verificar(
+  "formato simplificado: 6 de 15 no significativos -> elegible",
+  C.puedeUsarSimplificado(
+    { ...baseSimplificado, azt: 0 },
+    resSimplificado6.energia100,
+  ),
+  true,
+);
+const resSimplificado5 = C.calcular(baseSimplificado, null);
+verificar(
+  "formato simplificado: 5 de 15 no significativos -> NO elegible",
+  C.puedeUsarSimplificado(baseSimplificado, resSimplificado5.energia100),
+  false,
+);
+
+// Los 9 nutrientes de la letra a) del art. 30.2 nunca se omiten en este
+// formato, aunque caigan bajo su umbral -- a diferencia del vertical
+// estándar. Solo fibra, vitaminas/minerales y calcio son omitibles.
+const valoresBajoUmbral = {
+  grasa: 0.1,
+  sat: 0.05,
+  trans: 50,
+  cho: 0.1,
+  fib: 0.1,
+  azt: 0.1,
+  aza: 0.1,
+  prot: 0.1,
+  na: 1,
+  vita: 1,
+  vitd: 0.1,
+  fe: 0.1,
+  zn: 0.1,
+  ca: 1,
+};
+const resBajoUmbral = C.calcular(valoresBajoUmbral, null);
+const omitidosSimplificado = C.nutrientesAOmitirSimplificado(
+  valoresBajoUmbral,
+  resBajoUmbral.energia100,
+  "norma",
+);
+for (const k of ["grasa", "sat", "trans", "cho", "azt", "aza", "prot", "na"]) {
+  verificar(
+    `formato simplificado: "${k}" nunca se omite (letra a del art. 30.2)`,
+    omitidosSimplificado.has(k),
+    false,
+  );
+}
+verificar(
+  "formato simplificado: fibra SÍ se omite bajo umbral, modo norma",
+  omitidosSimplificado.has("fib"),
+  true,
+);
+verificar(
+  "formato simplificado: calcio SÍ se omite bajo 20 mg, modo norma (a diferencia del vertical estándar)",
+  omitidosSimplificado.has("ca"),
+  true,
+);
+verificar(
+  "formato simplificado: modo 'todo' -> nunca omite nada",
+  C.nutrientesAOmitirSimplificado(
+    valoresBajoUmbral,
+    resBajoUmbral.energia100,
+    "todo",
+  ).size,
+  0,
+);
+
+// Factor de conversión calórica de la fibra (art. 11.1): no fijado por ley,
+// configurable -- ya no debe estar hardcodeado en 2 kcal/g.
+const valoresFibra = { cho: 60, fib: 10, grasa: 5, prot: 5 };
+verificar(
+  "calcular(): factor de fibra por defecto (2 kcal/g)",
+  C.calcular(valoresFibra, null).energia100,
+  285,
+);
+verificar(
+  "calcular(): factor de fibra = 0 da una energía distinta (ya no hardcodeado)",
+  C.calcular(valoresFibra, null, 0).energia100,
+  265,
 );
 
 if (fallos > 0) {

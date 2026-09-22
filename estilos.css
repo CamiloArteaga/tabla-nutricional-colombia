@@ -138,6 +138,21 @@ button {
   margin-top: 0.4rem;
 }
 
+/* art. 28.1/28.4: negrilla + 1.3x en calorías, sodio, grasa saturada, grasa
+   trans y azúcares añadidos. */
+tr.negrilla td {
+  font-weight: bold;
+  font-size: 1.3em;
+}
+
+.aviso-formato {
+  background: #fff3cd;
+  border: 1px solid #d4a300;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.75rem;
+  margin-bottom: 0.3rem;
+}
+
 /* Formato tabular (art. 30.4): caja horizontal, título/porción a la
    izquierda y la tabla de nutrientes a la derecha. */
 .tabular {
@@ -217,6 +232,10 @@ button {
 
 .lineal p:last-child {
   margin-bottom: 0;
+}
+
+.lineal strong {
+  font-size: 1.3em;
 }
 
 /* Sellos de advertencia (art. 32): octágono negro con borde blanco. */

@@ -55,6 +55,7 @@ function leerFormulario() {
   const transIndustrial = parseFloat(
     document.getElementById("trans-industrial").value,
   );
+  const factorFibra = parseFloat(document.getElementById("factor-fibra").value);
   return {
     producto: document.getElementById("producto").value,
     porcionTexto: document.getElementById("porcion-texto").value,
@@ -65,6 +66,7 @@ function leerFormulario() {
     declaracionAzucares: document.getElementById("declaracion-azucares")
       .checked,
     transIndustrial: C.esNumero(transIndustrial) ? transIndustrial : null,
+    factorFibra: C.esNumero(factorFibra) ? factorFibra : undefined,
     formato: document.querySelector('input[name="formato"]:checked').value,
     modo: document.querySelector('input[name="modo"]:checked').value,
     valores100,
@@ -82,6 +84,15 @@ function filasVisibles(omitidos) {
   return C.PARAMS.filter((p) => !omitidos.has(p.k));
 }
 
+// art. 28.1/28.4: nombres y valores en negrilla y 1.3x el tamaño, en todos
+// los formatos en columna (vertical, tabular, simplificado) y en el lineal.
+const NUTRIENTES_NEGRILLA = new Set(["sat", "trans", "na", "aza"]);
+
+function filaNutriente(p, valor100, valorPorcion) {
+  const clase = NUTRIENTES_NEGRILLA.has(p.k) ? ' class="negrilla"' : "";
+  return `<tr${clase}><td>${p.nombre} (${p.unidad})</td><td>${num(C.formatearNutriente(p.k, valor100), C.decimalesParaNutriente(p.k, valor100))}</td><td>${num(C.formatearNutriente(p.k, valorPorcion), C.decimalesParaNutriente(p.k, valorPorcion))}</td></tr>`;
+}
+
 function pintarVertical(datos, res, omitidos, leyenda) {
   const el = document.getElementById("tabla-nutricional");
   el.className = "etiqueta";
@@ -90,10 +101,7 @@ function pintarVertical(datos, res, omitidos, leyenda) {
   const ePorcion = C.formatearEnergia(res.energiaPorcion);
 
   const filas = filasVisibles(omitidos)
-    .map(
-      (p) =>
-        `<tr><td>${p.nombre} (${p.unidad})</td><td>${num(C.formatearNutriente(p.k, res.valores100[p.k]), C.decimalesParaNutriente(p.k, res.valores100[p.k]))}</td><td>${num(C.formatearNutriente(p.k, res.valoresPorcion[p.k]), C.decimalesParaNutriente(p.k, res.valoresPorcion[p.k]))}</td></tr>`,
-    )
+    .map((p) => filaNutriente(p, res.valores100[p.k], res.valoresPorcion[p.k]))
     .join("");
 
   el.innerHTML = `
@@ -120,10 +128,7 @@ function pintarTabular(datos, res, omitidos, leyenda) {
   const ePorcion = C.formatearEnergia(res.energiaPorcion);
 
   const filas = filasVisibles(omitidos)
-    .map(
-      (p) =>
-        `<tr><td>${p.nombre} (${p.unidad})</td><td>${num(C.formatearNutriente(p.k, res.valores100[p.k]), C.decimalesParaNutriente(p.k, res.valores100[p.k]))}</td><td>${num(C.formatearNutriente(p.k, res.valoresPorcion[p.k]), C.decimalesParaNutriente(p.k, res.valoresPorcion[p.k]))}</td></tr>`,
-    )
+    .map((p) => filaNutriente(p, res.valores100[p.k], res.valoresPorcion[p.k]))
     .join("");
 
   el.innerHTML = `
@@ -145,8 +150,6 @@ function pintarTabular(datos, res, omitidos, leyenda) {
   `;
 }
 
-const NEGRILLA_LINEAL = new Set(["sat", "trans", "na", "aza"]);
-
 function fraseLineal(datos, res, base, omitidos) {
   const esPorcion = base === "porcion";
   const valores = esPorcion ? res.valoresPorcion : res.valores100;
@@ -159,7 +162,7 @@ function fraseLineal(datos, res, base, omitidos) {
   const partes = [`<strong>Calorías</strong> ${eTxt}`];
   for (const p of filasVisibles(omitidos)) {
     const txt = `${p.nombre} ${valorTexto(p, valores[p.k])}`;
-    partes.push(NEGRILLA_LINEAL.has(p.k) ? `<strong>${txt}</strong>` : txt);
+    partes.push(NUTRIENTES_NEGRILLA.has(p.k) ? `<strong>${txt}</strong>` : txt);
   }
   return unirConY(partes);
 }
@@ -180,6 +183,46 @@ function pintarLineal(datos, res, omitidos, leyenda) {
   el.innerHTML = `
     <p><strong>Información nutricional (100 g o 100 mL):</strong> ${fraseLineal(datos, res, "cien", omitidos)}.</p>
     <p><strong>Información nutricional (porción):</strong> ${infoPorcion} ${fraseLineal(datos, res, "porcion", omitidos)}.${leyenda ? ` ${leyenda}` : ""}</p>
+  `;
+}
+
+const PARAM_POR_CLAVE = Object.fromEntries(C.PARAMS.map((p) => [p.k, p]));
+
+function pintarSimplificado(datos, res, omitidos, leyenda, elegible) {
+  const el = document.getElementById("tabla-nutricional");
+  el.className = "etiqueta";
+
+  const e100 = C.formatearEnergia(res.energia100);
+  const ePorcion = C.formatearEnergia(res.energiaPorcion);
+
+  const filas = C.ORDEN_SIMPLIFICADO.filter((k) => !omitidos.has(k))
+    .map((k) =>
+      filaNutriente(
+        PARAM_POR_CLAVE[k],
+        res.valores100[k],
+        res.valoresPorcion[k],
+      ),
+    )
+    .join("");
+
+  const aviso = elegible
+    ? ""
+    : `<div class="aviso-formato">El formato simplificado no cumple el art. 30.2 con estos valores: se requieren 6 o más nutrientes "no significativos" de los 15 que evalúa la norma.</div>`;
+
+  el.innerHTML = `
+    ${aviso}
+    <div class="titulo">Información Nutricional</div>
+    <div class="linea-porcion">Tamaño de la porción: ${datos.porcionTexto || "—"}</div>
+    <div class="linea-porciones">${datos.porcionesEnvase ? `Porciones por envase: ${datos.porcionesEnvase}` : ""}</div>
+    <div class="linea-gruesa"></div>
+    <table>
+      <thead><tr><th>Nutriente</th><th>Por 100 g/mL</th><th>Por porción</th></tr></thead>
+      <tbody>
+        <tr class="energia"><td>Energía (kcal)</td><td>${num(e100, C.decimalesParaEnergia(res.energia100))}</td><td>${num(ePorcion, C.decimalesParaEnergia(res.energiaPorcion))}</td></tr>
+        ${filas}
+      </tbody>
+    </table>
+    ${leyenda ? `<div class="leyenda-omision">${leyenda}</div>` : ""}
   `;
 }
 
@@ -237,17 +280,30 @@ function recalcular() {
   const datos = leerFormulario();
   guardado.escribir(datos);
 
-  const res = C.calcular(datos.valores100, datos.porcionG);
-  const omitidos = C.nutrientesAOmitir(datos.valores100, datos.modo, {
-    grasa: datos.declaracionGrasa,
-    azucares: datos.declaracionAzucares,
-  });
-  const leyenda = C.textoLeyendaOmision(omitidos);
+  const res = C.calcular(datos.valores100, datos.porcionG, datos.factorFibra);
 
-  if (datos.formato === "tabular") pintarTabular(datos, res, omitidos, leyenda);
-  else if (datos.formato === "lineal")
-    pintarLineal(datos, res, omitidos, leyenda);
-  else pintarVertical(datos, res, omitidos, leyenda);
+  if (datos.formato === "simplificado") {
+    const omitidos = C.nutrientesAOmitirSimplificado(
+      datos.valores100,
+      res.energia100,
+      datos.modo,
+    );
+    const leyenda = C.textoLeyendaOmision(omitidos);
+    const elegible = C.puedeUsarSimplificado(datos.valores100, res.energia100);
+    pintarSimplificado(datos, res, omitidos, leyenda, elegible);
+  } else {
+    const omitidos = C.nutrientesAOmitir(datos.valores100, datos.modo, {
+      grasa: datos.declaracionGrasa,
+      azucares: datos.declaracionAzucares,
+    });
+    const leyenda = C.textoLeyendaOmision(omitidos);
+
+    if (datos.formato === "tabular")
+      pintarTabular(datos, res, omitidos, leyenda);
+    else if (datos.formato === "lineal")
+      pintarLineal(datos, res, omitidos, leyenda);
+    else pintarVertical(datos, res, omitidos, leyenda);
+  }
 
   const sellos = C.calcularSellos(
     datos.valores100,
@@ -276,6 +332,8 @@ function restaurar() {
     document.getElementById("declaracion-azucares").checked = true;
   if (C.esNumero(datos.transIndustrial))
     document.getElementById("trans-industrial").value = datos.transIndustrial;
+  if (C.esNumero(datos.factorFibra))
+    document.getElementById("factor-fibra").value = datos.factorFibra;
   if (datos.formato) {
     const input = document.querySelector(
       `input[name="formato"][value="${datos.formato}"]`,

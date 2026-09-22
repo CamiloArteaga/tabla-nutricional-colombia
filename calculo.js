@@ -101,6 +101,9 @@ const NOMBRE_OMISION = {
   vitd: "vitamina D",
   fe: "hierro",
   zn: "zinc",
+  // Solo se usa desde el formato simplificado (art. 30.2): en el vertical
+  // estándar (Tabla 3) el calcio nunca entra al Set de omisión.
+  ca: "calcio",
 };
 
 // modo: "todo" (declarar siempre todo) o "norma" (omitir cuando el art. 10.7 lo permite).
@@ -120,6 +123,86 @@ function nutrientesAOmitir(valores100, modo, declaraciones = {}) {
   if (declaraciones.grasa) omitidos.delete("sat");
   if (declaraciones.azucares) omitidos.delete("azt");
   return omitidos;
+}
+
+// Formato simplificado (art. 30.2): a diferencia del vertical estándar,
+// calorías, grasa total, grasa saturada, grasa trans, carbohidratos totales,
+// proteína, sodio, azúcares totales y azúcares añadidos son SIEMPRE
+// obligatorios (letra a) -- nunca se omiten aunque caigan bajo el umbral. Los
+// únicos nutrientes que esa misma norma permite omitir son fibra dietaria,
+// vitamina A, vitamina D, hierro, zinc y calcio (este último NUNCA se omite
+// en el formato vertical estándar, ver comentario de NOMBRE_OMISION).
+const OMITIBLES_SIMPLIFICADO = new Set([
+  "fib",
+  "vita",
+  "vitd",
+  "fe",
+  "zn",
+  "ca",
+]);
+
+// Orden de declaración del art. 28.4 (aplica también al simplificado, art.
+// 30.2: "misma presentación gráfica... del formato vertical estándar"), más
+// el orden de vitaminas/minerales del propio 28.4.
+const ORDEN_SIMPLIFICADO = [
+  "grasa",
+  "sat",
+  "trans",
+  "cho",
+  "fib",
+  "azt",
+  "aza",
+  "prot",
+  "na",
+  "vita",
+  "vitd",
+  "fe",
+  "ca",
+  "zn",
+];
+
+// Tabla 9 (VRN-N, adultos): calcio 1 000 mg; 2 % = 20 mg. El art. 10.7 no da
+// esta excepción al calcio para el formato vertical estándar, pero el art.
+// 30.2 sí lo cuenta entre los nutrientes "no significativos" elegibles para
+// decidir si el formato simplificado puede usarse.
+const VRN_2PCT_SIMPLIFICADO = { ...VRN_2PCT, ca: 20 };
+
+// Los 15 nutrientes del art. 30.2 (calorías + 14 más) que son "no
+// significativos" con estos valores. Sirve tanto para contar la condición de
+// elegibilidad del formato (6 o más) como para decidir cuáles de los
+// omitibles se ocultan de la tabla.
+function noSignificativosSimplificado(valores100, energia100) {
+  const n = new Set();
+  if ((energia100 || 0) <= UMBRAL_CERO.energia) n.add("energia");
+  for (const k of [
+    "grasa",
+    "sat",
+    "trans",
+    "na",
+    "cho",
+    "fib",
+    "azt",
+    "aza",
+    "prot",
+  ]) {
+    if ((valores100[k] || 0) <= UMBRAL_CERO[k]) n.add(k);
+  }
+  for (const k of ["vita", "vitd", "fe", "zn", "ca"]) {
+    if ((valores100[k] || 0) < VRN_2PCT_SIMPLIFICADO[k]) n.add(k);
+  }
+  return n;
+}
+
+// art. 30.2: el formato simplificado solo puede usarse si 6 o más de esos 15
+// nutrientes son "no significativos".
+function puedeUsarSimplificado(valores100, energia100) {
+  return noSignificativosSimplificado(valores100, energia100).size >= 6;
+}
+
+function nutrientesAOmitirSimplificado(valores100, energia100, modo) {
+  if (modo !== "norma") return new Set();
+  const n = noSignificativosSimplificado(valores100, energia100);
+  return new Set([...n].filter((k) => OMITIBLES_SIMPLIFICADO.has(k)));
 }
 
 function textoLeyendaOmision(omitidos) {
@@ -179,14 +262,19 @@ function calcularSellos(
   };
 }
 
-function calcular(valores100, porcionG) {
+// factorFibra: kcal/g de fibra dietaria. El art. 11.1 (Tabla 4) no fija este
+// valor -- "el fabricante utilizará los factores de conversión calórica
+// contemplados en documentos de referencia científica" -- así que 2 kcal/g es
+// solo el valor por defecto, no una obligación legal.
+function calcular(valores100, porcionG, factorFibra) {
   const cho = valores100.cho || 0;
   const fib = valores100.fib || 0;
   const grasa = valores100.grasa || 0;
   const prot = valores100.prot || 0;
+  const fFibra = esNumero(factorFibra) ? factorFibra : 2;
 
   const disponibles100 = cho - fib;
-  const energia100 = disponibles100 * 4 + grasa * 9 + prot * 4 + fib * 2;
+  const energia100 = disponibles100 * 4 + grasa * 9 + prot * 4 + fib * fFibra;
 
   const factor = esNumero(porcionG) && porcionG > 0 ? porcionG / 100 : 0;
 
@@ -214,6 +302,11 @@ const api = {
   VRN_2PCT,
   NOMBRE_OMISION,
   nutrientesAOmitir,
+  OMITIBLES_SIMPLIFICADO,
+  ORDEN_SIMPLIFICADO,
+  noSignificativosSimplificado,
+  puedeUsarSimplificado,
+  nutrientesAOmitirSimplificado,
   textoLeyendaOmision,
   calcularSellos,
   calcular,

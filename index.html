@@ -55,6 +55,10 @@
             <input type="radio" name="formato" value="lineal" />
             Lineal
           </label>
+          <label class="campo-radio">
+            <input type="radio" name="formato" value="simplificado" />
+            Simplificado
+          </label>
         </fieldset>
 
         <fieldset>
@@ -73,6 +77,18 @@
             >Grasa trans industriales (mg, para el sello — si se deja vacío se
             usa el total de grasa trans)
             <input type="number" id="trans-industrial" step="any" min="0" />
+          </label>
+          <label
+            >Factor de conversión calórica de la fibra dietaria (kcal/g) — el
+            art. 11.1 no fija un valor, use el de su documento de referencia
+            científica (por defecto 2)
+            <input
+              type="number"
+              id="factor-fibra"
+              step="any"
+              min="0"
+              value="2"
+            />
           </label>
         </fieldset>
 
