@@ -11,6 +11,9 @@ const PARAMS = [
   { k: "aza", nombre: "Azúcares añadidos", unidad: "g" },
   { k: "fib", nombre: "Fibra dietaria", unidad: "g" },
   { k: "na", nombre: "Sodio", unidad: "mg" },
+  // Declaración voluntaria (art. 10.8.1); si se declara, va inmediatamente
+  // debajo de sodio (art. 28.4) y no se separa de él con línea (art. 28.3).
+  { k: "pot", nombre: "Potasio", unidad: "mg" },
   { k: "vita", nombre: "Vitamina A", unidad: "µg ER" },
   { k: "vitd", nombre: "Vitamina D", unidad: "µg" },
   { k: "fe", nombre: "Hierro", unidad: "mg" },
@@ -57,7 +60,7 @@ function redondearTabla1(valor, unidad, esVitaminaOMineral) {
   return redondearDecimales(valor, decimalesTabla1(valor, esVitaminaOMineral));
 }
 
-const VITAMINAS_MINERALES = new Set(["vita", "vitd", "fe", "zn", "ca"]);
+const VITAMINAS_MINERALES = new Set(["vita", "vitd", "fe", "zn", "ca", "pot"]);
 
 // Aplica Tabla 2 (cero) y luego Tabla 1 (redondeo) a un nutriente declarado.
 function formatearNutriente(k, valor) {

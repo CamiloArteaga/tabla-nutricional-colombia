@@ -339,6 +339,30 @@ verificar(
   265,
 );
 
+// Potasio (art. 10.8.1): declaración voluntaria, mismo redondeo que
+// vitaminas/minerales (2 decimales bajo 1) y SIN umbral de "no
+// significativo" en la Tabla 2 (a diferencia de sodio).
+verificar(
+  "potasio 0.123 mg -> 2 decimales, como mineral",
+  C.formatearNutriente("pot", 0.123),
+  0.12,
+);
+verificar(
+  "potasio no tiene umbral de Tabla 2 (a diferencia de sodio, que a 3 mg redondea a 0 decimales)",
+  C.decimalesParaNutriente("pot", 3),
+  1,
+);
+verificar(
+  "sodio SÍ tiene umbral de Tabla 2: 3 mg (<=5) declara con 0 decimales",
+  C.decimalesParaNutriente("na", 3),
+  0,
+);
+verificar(
+  "potasio no se omite en modo norma (no está en la Tabla 3 del art. 10.7)",
+  C.nutrientesAOmitir({ pot: 0 }, "norma").has("pot"),
+  false,
+);
+
 if (fallos > 0) {
   console.error(`\n${fallos} prueba(s) fallida(s)`);
   process.exit(1);
